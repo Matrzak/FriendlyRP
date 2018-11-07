@@ -13,8 +13,7 @@ end
 function IsBanned(val)
 	for index,value in ipairs(Banned) do
 		if tostring(value.steamid) == tostring(val) then
-			print ("No niezle")
-			return {value.reason,value.deadline,value.punisher}
+			return value.reason,value.deadline,value.punisher
 		end
 	end
 	return nil
@@ -63,12 +62,10 @@ function StartLoginController()
 			local string_id = string.sub(steamID,7,#steamID)
 			local to_convert = tonumber(string_id,16)
 
-			if not IsBanned(to_convert) == nil then
-				local punisher = IsBanned(to_convert)[2]
-				local deadline = IsBanned(to_convert)[1]
-				local reason = IsBanned(to_convert)[0]
-				deferrals.done("[FriendlyRP] Zostales zbanowany! Przez: " .. punisher .. " Za: " ..
-					reason .. " Data wygasniecia: " .. deadline)
+			if IsBanned(to_convert) ~= nil then
+				local values = {IsBanned(to_convert)}
+				deferrals.done("[FriendlyRP] Zostales zbanowany! Przez: " .. values[3] .. " Za: " ..
+					values[1] .. " Data wygasniecia: " .. values[2])
 				return
 			end
 
