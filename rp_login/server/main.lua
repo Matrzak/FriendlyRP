@@ -1,3 +1,4 @@
+
 WhiteList = {}
 Banned = {}
 
@@ -8,6 +9,22 @@ function Exists(array,val)
 		end
 	end
 	return false
+end
+
+function BanExpired(timestamp)
+	local currently = os.time(os.date("!*t"))
+	if timestamp <= currently then
+		return true
+	end
+	return false
+end
+
+function RemoveBan(steamid)
+	MySQL.ready(function ()
+		MySQL.Sync.execute('DELETE FROM banned WHERE steamid = ' .. steamid,{},function(changed)
+			print(changed)
+		end)
+	end)
 end
 
 function IsBanned(val)
@@ -21,7 +38,6 @@ end
 
 function GetPlayersData()
 	MySQL.ready(function () 
-		print("OK")
 		MySQL.Async.fetchAll('SELECT * FROM whitelist',{}, function(user)
 			for i=1, #user, 1 do
 				table.insert(WhiteList,tostring(user[i].steamid))
@@ -39,6 +55,7 @@ end
 AddEventHandler('onResourceStart',function(resouce_data)
 	if resouce_data == "rp_core" then
 		GetPlayersData()
+
 	end
 
 end)
@@ -52,7 +69,6 @@ function StartLoginController()
 
 			deferrals.defer()
 			deferrals.update("[FriendlyRP] Sprawdzam SteamID..")
-
 			Wait(100)
 			local whitelisted, kickReason, steamID = false, nil, GetPlayerIdentifiers(source_data)[1]
 
@@ -62,19 +78,30 @@ function StartLoginController()
 			local string_id = string.sub(steamID,7,#steamID)
 			local to_convert = tonumber(string_id,16)
 
-			if IsBanned(to_convert) ~= nil then
-				local values = {IsBanned(to_convert)}
-				deferrals.done("[FriendlyRP] Zostales zbanowany! Przez: " .. values[3] .. " Za: " ..
-					values[1] .. " Data wygasniecia: " .. values[2])
-				return
-			end
-
-			if Exists(WhiteList, tostring(to_convert)) then
-				deferrals.done("[FriendlyRP] Znajdujesz sie na WhiteList")
-			else
+			if not Exists(WhiteList, tostring(to_convert)) then
 				deferrals.done("[FriendlyRP] Nie znajdujesz sie na Whitelist")
 			end
-			deferrals.done("Ni ma przejscia")
+
+			if IsBanned(to_convert) ~= nil then
+				print("XD1")
+				local values = {IsBanned(to_convert)}
+				if values[2] == 0 then
+					deferrals.done("[FriendlyRP] Zostales zbanowany permanentnie! \n Przez: " .. values[3] .. "\n Powod: " .. values[1])
+				end
+				if not BanExpired(tonumber(values[2])) then
+					print("XD3")
+					deferrals.done("[FriendlyRP] Zostales zbanowany! \n Przez: " .. values[3] .. " \n Powod: " ..
+					values[1] .. " \n Data wygasniecia: " .. os.date('%Y-%m-%d %H:%M:%S', values[2]))
+				else
+					print("XD")
+					RemoveBan(to_convert)
+					deferrals.done()
+				end
+				
+			end
+
+			deferrals.done()
+
 		end)
 	end)
 end
