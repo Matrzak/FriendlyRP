@@ -53,7 +53,7 @@ function GetPlayersData()
 end
 
 AddEventHandler('onResourceStart',function(resouce_data)
-	if resouce_data == "rp_core" then
+	if resouce_data == "rp_login" then
 		GetPlayersData()
 
 	end
@@ -82,18 +82,17 @@ function StartLoginController()
 				deferrals.done("[FriendlyRP] Nie znajdujesz sie na Whitelist")
 			end
 
+			
+
 			if IsBanned(to_convert) ~= nil then
-				print("XD1")
 				local values = {IsBanned(to_convert)}
 				if values[2] == 0 then
 					deferrals.done("[FriendlyRP] Zostales zbanowany permanentnie! \n Przez: " .. values[3] .. "\n Powod: " .. values[1])
 				end
 				if not BanExpired(tonumber(values[2])) then
-					print("XD3")
 					deferrals.done("[FriendlyRP] Zostales zbanowany! \n Przez: " .. values[3] .. " \n Powod: " ..
 					values[1] .. " \n Data wygasniecia: " .. os.date('%Y-%m-%d %H:%M:%S', values[2]))
 				else
-					print("XD")
 					RemoveBan(to_convert)
 					deferrals.done()
 				end
