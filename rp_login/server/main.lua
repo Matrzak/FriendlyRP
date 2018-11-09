@@ -1,3 +1,8 @@
+-- REGISTER SECTION
+		RegisterServerEvent("rp:createaccount")
+		RegisterServerEvent("rp:accountdata")
+-- END OF
+
 
 WhiteList = {}
 Banned = {}
@@ -17,6 +22,27 @@ function BanExpired(timestamp)
 		return true
 	end
 	return false
+end
+
+function ManageConnection(steamid,nick)
+	account = nil
+	TriggerEvent('rp:checklocalaccount',{steamid})
+	AddEventHandler("rp:accountdata", function (data)
+		print(data[1])
+		account = data[1]
+	end)
+	if account ~= nil then
+		print("Taki sie juz znajduje")
+		return
+	end
+
+	print("Ladowanie gracza..")
+	MySQL.ready(function()
+		local account = MySQL.Sync.fetchAll('SELECT * FROM accounts WHERE steamid = ' .. steamid .. ' LIMIT 1')
+		local rang_id = account[1].rangid
+		local characters = nil
+		TriggerEvent('rp:createaccount',{steamid,rang_id,nick})
+	end)
 end
 
 function RemoveBan(steamid)
@@ -55,13 +81,11 @@ end
 AddEventHandler('onResourceStart',function(resouce_data)
 	if resouce_data == "rp_login" then
 		GetPlayersData()
-
 	end
 
 end)
 
 function StartLoginController()
-	print("Wielkosc: " .. #WhiteList)
 	Citizen.CreateThread(function()
 		AddEventHandler('playerConnecting', function(name, callback, deferrals)
 			local source_data = source
@@ -77,9 +101,15 @@ function StartLoginController()
 			end
 			local string_id = string.sub(steamID,7,#steamID)
 			local to_convert = tonumber(string_id,16)
+			ManageConnection(to_convert,name)
+			if next(WhiteList) == nil then
+				deferrals.done("[FriendlyRP] Nie znajdujesz sie na Whitelist")
+				return
+			end
 
 			if not Exists(WhiteList, tostring(to_convert)) then
 				deferrals.done("[FriendlyRP] Nie znajdujesz sie na Whitelist")
+				return
 			end
 
 			
@@ -94,13 +124,11 @@ function StartLoginController()
 					values[1] .. " \n Data wygasniecia: " .. os.date('%Y-%m-%d %H:%M:%S', values[2]))
 				else
 					RemoveBan(to_convert)
-					deferrals.done()
 				end
 				
 			end
-
+			ManageConnection(to_convert,name)
 			deferrals.done()
-
 		end)
 	end)
 end
